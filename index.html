@@ -3,590 +3,243 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-// ── PROTEÇÃO POR SENHA ──────────────────────────────────────────────────────
-// Para alterar a senha, mude o valor de SENHA_HASH abaixo.
-// Gere um novo hash em: https://emn178.github.io/online-tools/sha256.html
-// Senha atual: arken2026
-const SENHA_HASH = "61ca2072c09e0750886ede143f9aa975800197eceb1be9ade1132da362fae23c";
-
-async function hashSenha(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function verificarSenha() {
-  const input = document.getElementById('senha-input').value;
-  const hash  = await hashSenha(input);
-
-  // Sessão dura 8 horas
-  const salvo = sessionStorage.getItem('arken_auth');
-  if (salvo && salvo === hash) return true;
-
-  if (hash === SENHA_HASH) {
-    sessionStorage.setItem('arken_auth', hash);
-    return true;
-  }
-  return false;
-}
-
-async function tentarLogin() {
-  const ok = await verificarSenha();
-  if (ok) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    loadData();
-  } else {
-    const err = document.getElementById('login-erro');
-    err.style.display = 'block';
-    document.getElementById('senha-input').value = '';
-    document.getElementById('senha-input').focus();
-    setTimeout(()=>err.style.display='none', 3000);
-  }
-}
-
-async function checkSessao() {
-  const salvo = sessionStorage.getItem('arken_auth');
-  if (salvo && salvo === SENHA_HASH) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    return true;
-  }
-  return false;
-}
-
-function logout() {
-  sessionStorage.removeItem('arken_auth');
-  location.reload();
-}
-
-window.addEventListener('DOMContentLoaded', async () => {
-  const autenticado = await checkSessao();
-  if (!autenticado) {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('senha-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') tentarLogin();
-    });
-  } else {
-    loadData();
-  }
-});
-// ────────────────────────────────────────────────────────────────────────────
-</script>
 <title>ARKEN — Dashboard Financeiro 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const SENHA_HASH="61ca2072c09e0750886ede143f9aa975800197eceb1be9ade1132da362fae23c";
+async function hashStr(s){const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function tentarLogin(){const h=await hashStr(document.getElementById('si').value);if(h===SENHA_HASH){sessionStorage.setItem('ak',h);mostrarApp();}else{const e=document.getElementById('le');e.style.display='block';document.getElementById('si').value='';setTimeout(()=>e.style.display='none',3000);}}
+function mostrarApp(){document.getElementById('ls').style.display='none';document.getElementById('app').style.display='block';loadData();}
+function logout(){sessionStorage.removeItem('ak');location.reload();}
+window.addEventListener('DOMContentLoaded',async()=>{const s=sessionStorage.getItem('ak');if(s&&s===SENHA_HASH)mostrarApp();else{document.getElementById('ls').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('si').addEventListener('keydown',e=>{if(e.key==='Enter')tentarLogin();});}});
+</script>
 <style>
-:root{
-  --az:#1B2A4A;--az2:#2C4A7C;--az3:#4A90D9;--azl:#D6E4F7;--azice:#EEF4FC;
-  --vd:#1A7A4A;--vdl:#D4EDDA;
-  --vm:#C0392B;--vml:#FDECEA;
-  --lj:#D35400;--ljl:#FDEBD0;
-  --am:#F39C12;--aml:#FEF9E7;
-  --cz:#8898AA;--czl:#F4F6F9;--br:#FFFFFF;
-  --shadow:0 2px 12px rgba(27,42,74,.08);
-  --radius:12px;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:var(--czl);color:var(--az)}
-
-/* HEADER */
-.header{background:linear-gradient(135deg,var(--az) 0%,var(--az2) 100%);padding:20px 36px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(27,42,74,.3)}
-.header h1{color:#fff;font-size:20px;letter-spacing:.8px}
-.header p{color:rgba(255,255,255,.55);font-size:11px;margin-top:3px}
-.badge{background:rgba(255,255,255,.12);color:#fff;padding:5px 12px;border-radius:16px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.18)}
-.badge.verde{background:var(--vd)}
-
-/* LOADING */
-#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;color:var(--cz)}
-.spinner{width:40px;height:40px;border:3px solid var(--azl);border-top-color:var(--az2);border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* TABS */
-.tabs{background:var(--az);display:flex;padding:0 36px}
-.tab{padding:13px 22px;color:rgba(255,255,255,.45);font-size:12px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;letter-spacing:.4px}
-.tab:hover{color:rgba(255,255,255,.8)}
-.tab.active{color:#fff;border-bottom-color:#4A90D9}
-
-/* MAIN */
-.main{padding:24px 36px;max-width:1400px;margin:0 auto}
-.page{display:none}.page.active{display:block}
-
-/* KPI GRID */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.kpi{background:var(--br);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid transparent;transition:transform .2s}
-.kpi:hover{transform:translateY(-2px)}
-.kpi.az{border-left-color:var(--az2)}
-.kpi.vd{border-left-color:var(--vd)}
-.kpi.vm{border-left-color:var(--vm)}
-.kpi.am{border-left-color:var(--am)}
-.kpi-label{font-size:10px;font-weight:700;color:var(--cz);text-transform:uppercase;letter-spacing:.7px}
-.kpi-val{font-size:24px;font-weight:800;margin:8px 0 4px;color:var(--az)}
-.kpi-sub{font-size:10px;color:var(--cz)}
-.pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:5px}
-.pill.up{background:var(--vdl);color:var(--vd)}
-.pill.down{background:var(--vml);color:var(--vm)}
-.pill.neu{background:var(--aml);color:var(--lj)}
-
-/* CHARTS */
-.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
-.charts-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-.card{background:var(--br);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--az);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.card-title span{font-weight:400;color:var(--cz);text-transform:none;font-size:10px;letter-spacing:0}
-
-/* TABLES */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:var(--az);color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:10px;letter-spacing:.4px}
-td{padding:9px 12px;border-bottom:1px solid #F0F3F8;color:var(--az)}
-tr:hover td{background:var(--azice)}
-tr:last-child td{border-bottom:none}
-.tag{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
-.tag.rec{background:var(--vdl);color:var(--vd)}
-.tag.prev{background:var(--ljl);color:var(--lj)}
-.tag.venc{background:var(--vml);color:var(--vm)}
-.tag.canc{background:var(--czl);color:var(--cz)}
-.val-pos{color:var(--vd);font-weight:700}
-.val-neg{color:var(--vm);font-weight:700}
-
-/* GAUGE */
-.gauge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-.gauge{background:var(--br);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);text-align:center}
-.gauge-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--cz);margin-bottom:10px}
-.gauge-val{font-size:30px;font-weight:800;margin:6px 0}
-.gauge-bar{height:7px;background:#E8EDF5;border-radius:4px;margin:10px 0 5px;overflow:hidden}
-.gauge-fill{height:100%;border-radius:4px;transition:width 1.2s ease}
-.gauge-sub{font-size:10px;color:var(--cz)}
-
-/* ERRO */
-.erro{background:var(--vml);border:1px solid var(--vm);color:var(--vm);padding:16px 20px;border-radius:var(--radius);margin:20px 0;font-size:13px}
-
-/* FOOTER */
-footer{text-align:center;padding:20px;color:var(--cz);font-size:11px}
-
-/* LOGIN */
-#login-screen{display:none;position:fixed;inset:0;background:linear-gradient(135deg,var(--az) 0%,var(--az2) 100%);z-index:9999;align-items:center;justify-content:center}
-.login-box{background:#fff;border-radius:16px;padding:40px 44px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
-.login-logo{font-size:22px;font-weight:800;color:var(--az);letter-spacing:1px;margin-bottom:4px}
-.login-sub{font-size:11px;color:var(--cz);margin-bottom:28px}
-.login-box input{width:100%;padding:12px 16px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:14px;outline:none;text-align:center;letter-spacing:3px;color:var(--az);transition:border-color .2s}
-.login-box input:focus{border-color:var(--az2)}
-.login-btn{width:100%;margin-top:14px;padding:12px;background:var(--az2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s}
-.login-btn:hover{background:var(--az)}
-#login-erro{display:none;margin-top:12px;background:var(--vml);color:var(--vm);padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600}
-.login-footer{margin-top:20px;font-size:10px;color:#ccc}
-.logout-btn{background:none;border:none;color:rgba(255,255,255,.4);font-size:10px;cursor:pointer;padding:4px 8px;border-radius:4px}
-.logout-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
+:root{--az:#1B2A4A;--az2:#2C4A7C;--az3:#4A90D9;--azl:#D6E4F7;--azice:#EEF4FC;--vd:#1A7A4A;--vdl:#D4EDDA;--vd2:#155A30;--vm:#C0392B;--vml:#FDECEA;--lj:#D35400;--ljl:#FDEBD0;--am:#F39C12;--aml:#FEF9E7;--am2:#7D6608;--cz:#8898AA;--czl:#F4F6F9;--br:#fff;--sh:0 2px 12px rgba(27,42,74,.08);--r:12px}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:var(--czl);color:var(--az)}
+#ls{display:none;position:fixed;inset:0;background:linear-gradient(135deg,var(--az),var(--az2));z-index:9999;align-items:center;justify-content:center}
+.lbox{background:#fff;border-radius:16px;padding:40px 44px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.lbox h2{font-size:24px;font-weight:800;color:var(--az);letter-spacing:1px}.lbox p{font-size:11px;color:var(--cz);margin:6px 0 28px}
+.lbox input{width:100%;padding:12px 16px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:15px;outline:none;text-align:center;letter-spacing:4px;transition:border-color .2s}
+.lbox input:focus{border-color:var(--az2)}.lbox button{width:100%;margin-top:14px;padding:12px;background:var(--az2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.lbox button:hover{background:var(--az)}#le{display:none;margin-top:12px;background:var(--vml);color:var(--vm);padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600}
+.lbox footer{margin-top:20px;font-size:10px;color:#bbb}
+.header{background:linear-gradient(135deg,var(--az),var(--az2));padding:18px 36px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(27,42,74,.3)}
+.header h1{color:#fff;font-size:19px;letter-spacing:.8px}.header p{color:rgba(255,255,255,.5);font-size:11px;margin-top:3px}
+.hb{display:flex;gap:10px;align-items:center}.badge{background:rgba(255,255,255,.12);color:#fff;padding:5px 12px;border-radius:16px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.18)}
+.badge.vd{background:var(--vd)}.ob{background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;padding:5px 12px;border-radius:16px}.ob:hover{color:#fff;border-color:rgba(255,255,255,.6)}
+.tabs{background:var(--az);display:flex;padding:0 36px}.tab{padding:13px 22px;color:rgba(255,255,255,.45);font-size:12px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}.tab:hover{color:rgba(255,255,255,.8)}.tab.active{color:#fff;border-bottom-color:#4A90D9}
+.main{padding:22px 36px;max-width:1440px;margin:0 auto}.page{display:none}.page.active{display:block}
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:14px;color:var(--cz)}
+.spin{width:38px;height:38px;border:3px solid var(--azl);border-top-color:var(--az2);border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.erro{background:var(--vml);border:1px solid var(--vm);color:var(--vm);padding:14px 18px;border-radius:var(--r);margin:16px 0;font-size:13px;display:none}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px}
+.geq{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.kpi{background:var(--br);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);border-left:4px solid transparent;transition:transform .2s}.kpi:hover{transform:translateY(-2px)}
+.kpi.az{border-left-color:var(--az2)}.kpi.vd{border-left-color:var(--vd)}.kpi.vm{border-left-color:var(--vm)}.kpi.am{border-left-color:var(--am)}
+.kl{font-size:10px;font-weight:700;color:var(--cz);text-transform:uppercase;letter-spacing:.7px}.kv{font-size:22px;font-weight:800;margin:7px 0 3px}.ks{font-size:10px;color:var(--cz)}
+.pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:4px}.pill.up{background:var(--vdl);color:var(--vd)}.pill.down{background:var(--vml);color:var(--vm)}.pill.neu{background:var(--aml);color:var(--lj)}
+.card{background:var(--br);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh)}.mb{margin-bottom:18px}
+.ct{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--az);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}.ct span{font-weight:400;color:var(--cz);text-transform:none;font-size:10px;letter-spacing:0}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}th{background:var(--az);color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:10px;letter-spacing:.4px}td{padding:9px 12px;border-bottom:1px solid #F0F3F8}tr:hover td{background:var(--azice)}tr:last-child td{border-bottom:none}
+.tag{padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}.tag.rec{background:var(--vdl);color:var(--vd)}.tag.prev{background:var(--ljl);color:var(--lj)}.tag.venc{background:var(--vml);color:var(--vm)}.tag.canc{background:var(--czl);color:var(--cz)}.tag.and{background:var(--azl);color:var(--az2)}
+.vp{color:var(--vd);font-weight:700}.vn{color:var(--vm);font-weight:700}
+.kb{background:var(--br);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh);border-left:4px solid var(--az2)}
+.kb .kl{margin-bottom:6px}.kb .kv{font-size:26px;font-weight:800;margin-bottom:4px}
+.bar{height:6px;background:#E8EDF5;border-radius:3px;margin:10px 0 4px;overflow:hidden}.bf{height:100%;border-radius:3px;transition:width 1s ease}
+.bm{font-size:10px;margin-top:6px;padding:3px 8px;border-radius:6px;display:inline-block}.bm.ok{background:var(--vdl);color:var(--vd2)}.bm.warn{background:var(--aml);color:var(--am2)}.bm.crit{background:var(--vml);color:var(--vm)}
+.di{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F0F3F8}.di:last-child{border-bottom:none}
+.dn{font-size:12px;font-weight:600}.ds{font-size:10px;color:var(--cz);margin-top:2px}.dp{width:80px;height:4px;background:#E8EDF5;border-radius:2px;margin-top:4px;overflow:hidden}.dpf{height:100%;background:var(--vm);border-radius:2px}
+.dv{font-size:13px;font-weight:700;color:var(--vm);text-align:right}
+footer{text-align:center;padding:18px;color:var(--cz);font-size:11px}
 </style>
 </head>
 <body>
-
-<!-- TELA DE LOGIN -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">ARKEN</div>
-    <div class="login-sub">Dashboard Financeiro · Acesso restrito</div>
-    <input type="password" id="senha-input" placeholder="Digite a senha" autocomplete="current-password">
-    <button class="login-btn" onclick="tentarLogin()">Entrar</button>
-    <div id="login-erro">Senha incorreta. Tente novamente.</div>
-    <div class="login-footer">ARKEN Consultoria © 2026</div>
-  </div>
-</div>
-
-<!-- APP PRINCIPAL -->
-<div id="app">
-
-<div class="header">
-  <div>
-    <h1>ARKEN CONSULTORIA &nbsp;|&nbsp; Dashboard Financeiro 2026</h1>
-    <p id="last-update">Carregando dados...</p>
-  </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <span class="badge" id="badge-mes">2026</span>
-    <span class="badge verde" id="badge-status">● Ao vivo</span>
-    <button class="logout-btn" onclick="logout()">Sair</button>
-  </div>
-</div>
-
-<div class="tabs">
-  <div class="tab active" onclick="tab('overview',this)">Visão Geral</div>
-  <div class="tab" onclick="tab('recebiveis',this)">Recebíveis</div>
-  <div class="tab" onclick="tab('projetos',this)">Projetos & Margem</div>
-  <div class="tab" onclick="tab('saude',this)">Saúde Financeira</div>
-  <div class="tab" onclick="tab('lancamentos',this)">Lançamentos</div>
-</div>
-
+<div id="ls"><div class="lbox"><h2>ARKEN</h2><p>Dashboard Financeiro · Acesso restrito</p><input type="password" id="si" placeholder="••••••••" autocomplete="current-password"><button onclick="tentarLogin()">Entrar</button><div id="le">Senha incorreta. Tente novamente.</div><footer>ARKEN Consultoria © 2026</footer></div></div>
+<div id="app" style="display:none">
+<div class="header"><div><h1>ARKEN CONSULTORIA &nbsp;|&nbsp; Dashboard Financeiro 2026</h1><p id="ts">Carregando...</p></div><div class="hb"><span class="badge">📅 2026</span><span class="badge vd">● Ao vivo</span><button class="ob" onclick="logout()">Sair</button></div></div>
+<div class="tabs"><div class="tab active" onclick="goTab('ov',this)">Visão Geral</div><div class="tab" onclick="goTab('re',this)">Recebíveis</div><div class="tab" onclick="goTab('pr',this)">Projetos & Margem</div><div class="tab" onclick="goTab('sf',this)">Saúde Financeira</div><div class="tab" onclick="goTab('la',this)">Lançamentos</div></div>
 <div class="main">
-  <div id="loading"><div class="spinner"></div><p>Carregando dados da planilha...</p></div>
-  <div id="erro-box" class="erro" style="display:none"></div>
+<div id="loading"><div class="spin"></div><p>Carregando dados da planilha...</p></div>
+<div id="eb" class="erro"></div>
 
-<!-- ═══ VISÃO GERAL ═══ -->
-<div id="page-overview" class="page">
-  <div class="kpi-grid">
-    <div class="kpi vd"><div class="kpi-label">Receita Realizada (YTD)</div><div class="kpi-val" id="k-rec-real">—</div><div class="kpi-sub">Lançamentos Pago/Recebido</div><div class="pill up" id="k-margem-pill">—</div></div>
-    <div class="kpi az"><div class="kpi-label">Total a Receber</div><div class="kpi-val" id="k-a-receber">—</div><div class="kpi-sub">Parcelas futuras confirmadas</div><div class="pill neu" id="k-rec-pill">—</div></div>
-    <div class="kpi vm"><div class="kpi-label">Custo Mensal Médio</div><div class="kpi-val" id="k-custo-med">—</div><div class="kpi-sub">Média dos meses com dados</div></div>
-    <div class="kpi am"><div class="kpi-label">Runway de Caixa</div><div class="kpi-val" id="k-runway">—</div><div class="kpi-sub" id="k-caixa-sub">—</div><div class="pill" id="k-runway-pill">—</div></div>
-  </div>
-  <div class="charts-grid">
-    <div class="card"><div class="card-title">Fluxo de Caixa Mensal <span>Realizado vs Previsto</span></div><canvas id="ch-fluxo" height="200"></canvas></div>
-    <div class="card"><div class="card-title">Composição do Resultado <span>YTD</span></div><canvas id="ch-resultado" height="200"></canvas></div>
-  </div>
-  <div class="charts-3">
-    <div class="card"><div class="card-title">Receita por Mês <span>Realizado</span></div><canvas id="ch-rec-mes" height="180"></canvas></div>
-    <div class="card"><div class="card-title">Status Recebíveis</div><canvas id="ch-rec-status" height="180"></canvas></div>
-    <div class="card"><div class="card-title">Custos: Fixo vs Variável <span>YTD Realizado</span></div><canvas id="ch-custos" height="180"></canvas></div>
-  </div>
+<!-- VISÃO GERAL -->
+<div id="page-ov" class="page">
+<div class="g4"><div class="kpi vd"><div class="kl">Receita Realizada (YTD)</div><div class="kv" id="k-r">—</div><div class="ks">Pago/Recebido</div><div class="pill" id="k-mg">—</div></div><div class="kpi az"><div class="kl">Total a Receber</div><div class="kv" id="k-ar">—</div><div class="ks" id="k-ars">—</div></div><div class="kpi vm"><div class="kl">Custo Mensal Médio</div><div class="kv" id="k-cm">—</div><div class="ks">Fixo + Variável realizado</div></div><div class="kpi am"><div class="kl">Runway de Caixa</div><div class="kv" id="k-rw">—</div><div class="ks" id="k-cs">—</div><div class="pill" id="k-rwp">—</div></div></div>
+<div class="g2"><div class="card"><div class="ct">Fluxo de Caixa Mensal <span>Realizado vs Previsto</span></div><canvas id="ch-fl" height="200"></canvas></div><div class="card"><div class="ct">Composição YTD</div><canvas id="ch-co" height="200"></canvas></div></div>
+<div class="g3"><div class="card"><div class="ct">Receita por Mês</div><canvas id="ch-rm" height="180"></canvas></div><div class="card"><div class="ct">Status Recebíveis</div><canvas id="ch-rs" height="180"></canvas></div><div class="card"><div class="ct">Custos: Fixo vs Variável</div><canvas id="ch-cu" height="180"></canvas></div></div>
 </div>
 
-<!-- ═══ RECEBÍVEIS ═══ -->
-<div id="page-recebiveis" class="page">
-  <div class="kpi-grid">
-    <div class="kpi vd"><div class="kpi-label">Recebido (YTD)</div><div class="kpi-val" id="k2-recebido">—</div></div>
-    <div class="kpi az"><div class="kpi-label">A Receber</div><div class="kpi-val" id="k2-areceber">—</div></div>
-    <div class="kpi vm"><div class="kpi-label">Vencido</div><div class="kpi-val" id="k2-vencido">—</div></div>
-    <div class="kpi am"><div class="kpi-label">Taxa de Recebimento</div><div class="kpi-val" id="k2-taxa">—</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Parcelas por Projeto</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Competência</th></tr></thead>
-    <tbody id="tbody-rec"></tbody></table></div>
-  </div>
+<!-- RECEBÍVEIS -->
+<div id="page-re" class="page">
+<div class="g4"><div class="kpi vd"><div class="kl">Total Recebido</div><div class="kv" id="k2-r">—</div></div><div class="kpi az"><div class="kl">A Receber</div><div class="kv" id="k2-a">—</div></div><div class="kpi vm"><div class="kl">Vencido</div><div class="kv" id="k2-v">—</div></div><div class="kpi am"><div class="kl">Taxa de Recebimento</div><div class="kv" id="k2-t">—</div></div></div>
+<div class="card mb"><div class="ct">Parcelas por Projeto</div><div class="tw"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Competência</th></tr></thead><tbody id="tb-re"></tbody></table></div></div>
 </div>
 
-<!-- ═══ PROJETOS ═══ -->
-<div id="page-projetos" class="page">
-  <div class="kpi-grid">
-    <div class="kpi vd"><div class="kpi-label">Receita Total em Carteira</div><div class="kpi-val" id="k3-rec">—</div></div>
-    <div class="kpi vm"><div class="kpi-label">Custos Diretos</div><div class="kpi-val" id="k3-cus">—</div></div>
-    <div class="kpi vd"><div class="kpi-label">Margem Bruta</div><div class="kpi-val" id="k3-mg">—</div></div>
-    <div class="kpi az"><div class="kpi-label">Margem %</div><div class="kpi-val" id="k3-pct">—</div></div>
-  </div>
-  <div class="charts-grid">
-    <div class="card"><div class="card-title">Receita vs Custos por Projeto</div><canvas id="ch-proj-bar" height="200"></canvas></div>
-    <div class="card"><div class="card-title">Margem % por Projeto</div><canvas id="ch-proj-pct" height="200"></canvas></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Detalhe por Projeto</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Status</th><th>Receita</th><th>Custos Diretos</th><th>Margem Bruta</th><th>Margem %</th></tr></thead>
-    <tbody id="tbody-proj"></tbody></table></div>
-  </div>
+<!-- PROJETOS -->
+<div id="page-pr" class="page">
+<div class="g4"><div class="kpi vd"><div class="kl">Receita Total</div><div class="kv" id="k3-r">—</div></div><div class="kpi vm"><div class="kl">Custos Diretos</div><div class="kv" id="k3-c">—</div></div><div class="kpi vd"><div class="kl">Margem Bruta</div><div class="kv" id="k3-m">—</div></div><div class="kpi az"><div class="kl">Margem %</div><div class="kv" id="k3-p">—</div></div></div>
+<div class="geq"><div class="card"><div class="ct">Receita vs Custos</div><canvas id="ch-pj" height="220"></canvas></div><div class="card"><div class="ct">Margem % por Projeto</div><canvas id="ch-pp" height="220"></canvas></div></div>
+<div class="card mb"><div class="ct">Detalhe por Projeto</div><div class="tw"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Status</th><th>Receita</th><th>Custos</th><th>Margem</th><th>Margem %</th></tr></thead><tbody id="tb-pr"></tbody></table></div></div>
 </div>
 
-<!-- ═══ SAÚDE ═══ -->
-<div id="page-saude" class="page">
-  <div class="gauge-grid">
-    <div class="gauge"><div class="gauge-lbl">Runway de Caixa</div><div class="gauge-val" id="g-runway" style="color:var(--vd)">—</div><div class="gauge-bar"><div class="gauge-fill" id="gf-runway" style="background:var(--vd)"></div></div><div class="gauge-sub" id="g-runway-sub">—</div></div>
-    <div class="gauge"><div class="gauge-lbl">Margem Bruta YTD</div><div class="gauge-val" id="g-margem" style="color:var(--az2)">—</div><div class="gauge-bar"><div class="gauge-fill" id="gf-margem" style="background:var(--az2)"></div></div><div class="gauge-sub">Meta: >50%</div></div>
-    <div class="gauge"><div class="gauge-lbl">Comprometimento do Caixa</div><div class="gauge-val" id="g-comp" style="color:var(--am)">—</div><div class="gauge-bar"><div class="gauge-fill" id="gf-comp" style="background:var(--am)"></div></div><div class="gauge-sub">Dívidas / Caixa · Saudável: <50%</div></div>
-  </div>
-  <div class="charts-grid">
-    <div class="card"><div class="card-title">Evolução do Caixa 2026 <span>Realizado + Previsto</span></div><canvas id="ch-caixa" height="200"></canvas></div>
-    <div class="card"><div class="card-title">Dívidas em Aberto</div><canvas id="ch-dividas" height="200"></canvas></div>
-  </div>
+<!-- SAÚDE FINANCEIRA -->
+<div id="page-sf" class="page">
+<div class="g3">
+<div class="kb" style="border-left-color:var(--vd)"><div class="kl">💰 Caixa Atual</div><div class="kv" id="s-cx">—</div><div class="bar"><div class="bf" id="bf-cx" style="background:var(--vd)"></div></div><div class="ks">Saldo bancário estimado (C. Inicial + Fluxo)</div></div>
+<div class="kb" style="border-left-color:var(--az2)"><div class="kl">🏃 Runway Completo</div><div class="kv" id="s-rw">—</div><div class="bar"><div class="bf" id="bf-rw" style="background:var(--az2)"></div></div><div class="ks">Meses sem nenhuma receita nova</div><div class="bm" id="bm-rw">—</div></div>
+<div class="kb" style="border-left-color:var(--am)"><div class="kl">🏃 Runway Só Custos Fixos</div><div class="kv" id="s-rwf">—</div><div class="bar"><div class="bf" id="bf-rwf" style="background:var(--am)"></div></div><div class="ks">Meses cobrindo apenas custos fixos</div></div>
+</div>
+<div class="g3">
+<div class="kb" style="border-left-color:var(--vd)"><div class="kl">📈 Margem Bruta YTD</div><div class="kv" id="s-mg">—</div><div class="bar"><div class="bf" id="bf-mg" style="background:var(--vd)"></div></div><div class="ks">Resultado / Receita realizada</div><div class="bm" id="bm-mg">—</div></div>
+<div class="kb" style="border-left-color:var(--vm)"><div class="kl">⚠️ Comprometimento do Caixa</div><div class="kv" id="s-co">—</div><div class="bar"><div class="bf" id="bf-co" style="background:var(--vm)"></div></div><div class="ks">Total dívidas / Caixa atual</div><div class="bm" id="bm-co">—</div></div>
+<div class="kb" style="border-left-color:var(--az3)"><div class="kl">📋 Taxa de Recebimento</div><div class="kv" id="s-tx">—</div><div class="bar"><div class="bf" id="bf-tx" style="background:var(--az3)"></div></div><div class="ks">Recebido / (Recebido + A Receber)</div><div class="bm" id="bm-tx">—</div></div>
+</div>
+<div class="g4 mb">
+<div class="kpi az"><div class="kl">⚖️ Cobertura Custos Fixos</div><div class="kv" id="s-cb">—</div><div class="ks">Receita / Custos fixos · Meta: >1.5×</div></div>
+<div class="kpi vd"><div class="kl">💹 Receita YTD</div><div class="kv" id="s-rc">—</div><div class="ks">Total realizado no ano</div></div>
+<div class="kpi vm"><div class="kl">💸 Dívidas em Aberto</div><div class="kv" id="s-dv">—</div><div class="ks">Pendente no DETALHAMENTO</div></div>
+<div class="kpi am"><div class="kl">📊 Custo Médio Mensal</div><div class="kv" id="s-cm">—</div><div class="ks" id="s-cms">—</div></div>
+</div>
+<div class="geq mb">
+<div class="card"><div class="ct">Evolução do Caixa 2026 <span>Realizado vs c/ Previsto</span></div><canvas id="ch-ca" height="200"></canvas></div>
+<div class="card"><div class="ct">Recebíveis por Competência <span>Recebido vs A Receber</span></div><canvas id="ch-rc" height="200"></canvas></div>
+</div>
+<div class="geq mb">
+<div class="card"><div class="ct">Dívidas em Aberto <span>lido do DETALHAMENTO — Status Pendente</span></div><div id="dl"><div style="color:var(--cz);font-size:12px;text-align:center;padding:20px">Carregando...</div></div><div style="border-top:2px solid var(--az);padding-top:12px;margin-top:8px;display:flex;justify-content:space-between"><strong style="font-size:12px">Total em aberto</strong><strong style="font-size:16px;color:var(--vm)" id="s-dt">—</strong></div></div>
+<div class="card"><div class="ct">Composição das Dívidas</div><canvas id="ch-dv" height="220"></canvas></div>
+</div>
+<div class="card mb"><div class="ct">Análise de Recebíveis</div><div class="tw"><table><thead><tr><th>Projeto</th><th>Tipo</th><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Competência</th></tr></thead><tbody id="tb-sr"></tbody></table></div></div>
 </div>
 
-<!-- ═══ LANÇAMENTOS ═══ -->
-<div id="page-lancamentos" class="page">
-  <div class="card">
-    <div class="card-title">Últimos 50 Lançamentos</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Projeto</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead>
-    <tbody id="tbody-lanc"></tbody></table></div>
-  </div>
+<!-- LANÇAMENTOS -->
+<div id="page-la" class="page">
+<div class="card mb"><div class="ct">Últimos 50 Lançamentos</div><div class="tw"><table><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Projeto</th><th>Descrição</th><th>Valor</th><th>Status</th></tr></thead><tbody id="tb-la"></tbody></table></div></div>
 </div>
-
-</div><!-- /main -->
-</div><!-- /app -->
+</div></div>
 <footer>ARKEN Consultoria · Dashboard gerado automaticamente via exportar_dados.py · Dados de ARKEN_Financeiro_2026.xlsx</footer>
 
 <script>
-// ── Navegação ──
-function tab(id, el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  el.classList.add('active');
-}
+function goTab(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');el.classList.add('active');}
+const BRL=v=>'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const PCT=v=>v.toFixed(1)+'%';const NUM=v=>v.toFixed(1);const MUL=v=>v.toFixed(2)+'×';
+const CH={};
+function mkC(id,type,data,opts={}){if(CH[id])CH[id].destroy();CH[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}}},scales:{},...opts}});}
+const C={az:'#1B2A4A',az2:'#2C4A7C',az3:'#4A90D9',vd:'#1A7A4A',vdl:'rgba(26,122,74,.15)',vm:'#C0392B',vml:'rgba(192,57,43,.1)',lj:'#D35400',ljl:'rgba(211,84,0,.15)',am:'#F39C12'};
+function bmCalc(val,ok,warn,labels,inv=false){let cls,txt;if(!inv){cls=val>=ok?'ok':val>=warn?'warn':'crit';txt=val>=ok?'✅ '+labels[0]:val>=warn?'⚠️ '+labels[1]:'🔴 '+labels[2];}else{cls=val<=ok?'ok':val<=warn?'warn':'crit';txt=val<=ok?'✅ '+labels[0]:val<=warn?'⚠️ '+labels[1]:'🔴 '+labels[2];}return{cls,txt};}
+function setBM(id,val,ok,warn,labels,inv=false){const b=bmCalc(val,ok,warn,labels,inv);const el=document.getElementById(id);el.textContent=b.txt;el.className='bm '+b.cls;}
+function setBar(id,pct,color){const el=document.getElementById(id);el.style.width=Math.min(Math.max(pct,0),100)+'%';if(color)el.style.background=color;}
 
-// ── Formatação ──
-const BRL = v => 'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const PCT = v => v.toFixed(1)+'%';
-const NUM = v => v.toFixed(1);
-
-// ── Charts globais ──
-const charts = {};
-function newChart(id, type, data, opts={}){
-  if(charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id),{type,data,options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10}}}},scales:{},...opts}});
-  return charts[id];
-}
-
-const AZ='#1B2A4A',AZ2='#2C4A7C',AZ3='#4A90D9';
-const VD='#1A7A4A',VDL='rgba(26,122,74,.15)';
-const VM='#C0392B',VML='rgba(192,57,43,.12)';
-const LJ='#D35400',LJL='rgba(211,84,0,.15)';
-const AM='#F39C12';
-
-// ── Carregar dados ──
 async function loadData(){
   document.getElementById('loading').style.display='flex';
   let data;
   try{
-    const r = await fetch('data.json?t='+Date.now());
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    data = await r.json();
-    // Validar que tem a estrutura esperada
-    if(!data || !data.kpis || !data.fluxo_mensal){
-      throw new Error('Estrutura inválida');
-    }
-  } catch(e){
-    console.warn('data.json não carregado ('+e.message+') — usando dados demo');
-    data = getDemoData();
-  }
-  try{
-    render(data);
-  } catch(e){
-    document.getElementById('loading').style.display='none';
-    const eb = document.getElementById('erro-box');
-    eb.style.display='block';
-    eb.textContent='Erro ao renderizar: '+e.message+'. Abra o console (F12) para detalhes.';
-    console.error(e);
-  }
+    const r=await fetch('data.json?t='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    data=await r.json();
+    if(!data||!data.kpis||!data.fluxo_mensal)throw new Error('JSON inválido');
+  }catch(e){console.warn('Usando demo:',e.message);data=demo();}
+  try{render(data);}catch(e){document.getElementById('loading').style.display='none';const eb=document.getElementById('eb');eb.style.display='block';eb.textContent='Erro: '+e.message;console.error(e);}
 }
 
 function render(d){
   document.getElementById('loading').style.display='none';
-  document.getElementById('erro-box').style.display='none';
-  // Mostrar todas as páginas (display controlado pelas tabs)
-  document.querySelectorAll('.page').forEach(p=>{p.style.display='block'; p.classList.remove('active');});
-  document.getElementById('page-overview').classList.add('active');
+  document.getElementById('eb').style.display='none';
+  document.querySelectorAll('.page').forEach(p=>{p.style.display='block';p.classList.remove('active');});
+  document.getElementById('page-ov').classList.add('active');
 
-  const k = d.kpis;
-  const ts = d.atualizado_em || '—';
-  document.getElementById('last-update').textContent = 'Última atualização: '+ts;
+  const k=d.kpis||{},fl=d.fluxo_mensal||[];
+  const rec=(d.recebiveis||[]).filter(r=>r.status&&r.val_parc>0&&!r.projeto.includes('▼'));
+  const proj=(d.projetos||[]).filter(p=>p.nome&&!['TOTAIS','▼'].some(x=>p.nome.includes(x))&&p.receita>0);
+  const lanc=d.lancamentos||[],divs=d.dividas||[];
 
-  // ── KPIs Visão Geral ──
-  document.getElementById('k-rec-real').textContent   = BRL(k.rec_real_ytd||0);
-  document.getElementById('k-a-receber').textContent  = BRL(k.a_receber||0);
-  document.getElementById('k-custo-med').textContent  = BRL(k.custo_med_mensal||0);
-  document.getElementById('k-runway').textContent     = NUM(k.runway_meses||0)+' meses';
-  document.getElementById('k-caixa-sub').textContent  = 'Caixa: '+BRL(k.caixa_atual||0);
+  document.getElementById('ts').textContent='Última atualização: '+(d.atualizado_em||'—');
 
-  const mg = k.margem_bruta_pct||0;
-  const mpill = document.getElementById('k-margem-pill');
-  mpill.textContent = 'Margem: '+PCT(mg);
-  mpill.className = 'pill '+(mg>50?'up':mg>20?'neu':'down');
+  // KPIs Visão Geral
+  const rr=k.rec_real_ytd||0,ar=k.a_receber||0,cm=k.custo_med_mensal||0,rw=k.runway_meses||0,mg=k.margem_bruta_pct||0;
+  document.getElementById('k-r').textContent=BRL(rr);
+  document.getElementById('k-ar').textContent=BRL(ar);
+  document.getElementById('k-ars').textContent=rec.filter(r=>r.status==='A RECEBER').length+' parcelas';
+  document.getElementById('k-cm').textContent=BRL(cm);
+  document.getElementById('k-rw').textContent=NUM(rw)+' meses';
+  document.getElementById('k-cs').textContent='Caixa: '+BRL(k.caixa_atual||0);
+  const mp=document.getElementById('k-mg');mp.textContent='Margem: '+PCT(mg);mp.className='pill '+(mg>50?'up':mg>20?'neu':'down');
+  const rwp=document.getElementById('k-rwp');rwp.textContent=rw>6?'✅ Saudável':rw>3?'⚠️ Atenção':'🔴 Crítico';rwp.className='pill '+(rw>6?'up':rw>3?'neu':'down');
 
-  const rw = k.runway_meses||0;
-  const rwpill = document.getElementById('k-runway-pill');
-  rwpill.textContent = rw>6?'✅ Saudável':rw>3?'⚠️ Atenção':'🔴 Crítico';
-  rwpill.className = 'pill '+(rw>6?'up':rw>3?'neu':'down');
+  // Charts OV
+  const ms=fl.map(m=>m.mes);
+  mkC('ch-fl','bar',{labels:ms,datasets:[{label:'Receita Real',data:fl.map(m=>m.rec_real),backgroundColor:'rgba(26,122,74,.75)',borderRadius:4},{label:'Receita Prev.',data:fl.map(m=>m.rec_prev),backgroundColor:'rgba(211,84,0,.5)',borderRadius:4},{label:'Custo Real',data:fl.map(m=>-(m.fix_real+m.var_real)),backgroundColor:'rgba(192,57,43,.65)',borderRadius:4},{label:'Fluxo Real',data:fl.map(m=>m.fluxo_real),type:'line',borderColor:C.az3,backgroundColor:'rgba(74,144,217,.08)',borderWidth:2,pointRadius:3,fill:true,yAxisID:'y1'}]},{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+  mkC('ch-co','doughnut',{labels:['Receita Real','Custo Fixo','Custo Var.'],datasets:[{data:[rr||1,fl.reduce((a,m)=>a+m.fix_real,0),fl.reduce((a,m)=>a+m.var_real,0)],backgroundColor:[C.vd,C.az,C.vm],borderWidth:2,borderColor:'#fff'}]},{cutout:'55%'});
+  mkC('ch-rm','bar',{labels:ms,datasets:[{label:'Realizado',data:fl.map(m=>m.rec_real),backgroundColor:'rgba(26,122,74,.8)',borderRadius:4},{label:'Previsto',data:fl.map(m=>m.rec_prev),backgroundColor:'rgba(211,84,0,.5)',borderRadius:4}]},{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+  const sc={};rec.forEach(r=>{if(!sc[r.status])sc[r.status]=0;sc[r.status]+=r.val_parc;});
+  mkC('ch-rs','doughnut',{labels:Object.keys(sc),datasets:[{data:Object.values(sc),backgroundColor:[C.am,C.vd,C.vm,C.az],borderWidth:2,borderColor:'#fff'}]},{cutout:'55%'});
+  mkC('ch-cu','bar',{labels:ms,datasets:[{label:'Fixo',data:fl.map(m=>m.fix_real),backgroundColor:'rgba(27,42,74,.75)',borderRadius:4},{label:'Variável',data:fl.map(m=>m.var_real),backgroundColor:'rgba(74,144,217,.65)',borderRadius:4}]},{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
 
-  document.getElementById('k-rec-pill').textContent = (d.recebiveis||[]).filter(r=>r.status==='A RECEBER').length+' parcelas';
-
-  // ── KPIs Recebíveis ──
-  document.getElementById('k2-recebido').textContent  = BRL(k.recebido||0);
-  document.getElementById('k2-areceber').textContent  = BRL(k.a_receber||0);
-  document.getElementById('k2-vencido').textContent   = BRL(k.vencido||0);
-  document.getElementById('k2-taxa').textContent      = PCT(k.taxa_recebimento_pct||0);
-
-  // ── KPIs Projetos ──
-  const proj = d.projetos||[];
-  const totRec = proj.reduce((a,p)=>a+p.receita,0);
-  const totCus = proj.reduce((a,p)=>a+p.custos,0);
-  const totMg  = totRec-totCus;
-  document.getElementById('k3-rec').textContent = BRL(totRec);
-  document.getElementById('k3-cus').textContent = BRL(totCus);
-  document.getElementById('k3-mg').textContent  = BRL(totMg);
-  document.getElementById('k3-pct').textContent = totRec?PCT(totMg/totRec*100):'—';
-
-  // ── Gauges Saúde ──
-  document.getElementById('g-runway').textContent  = NUM(rw)+' meses';
-  document.getElementById('gf-runway').style.width = Math.min(rw/12*100,100)+'%';
-  document.getElementById('g-runway-sub').textContent = 'Caixa: '+BRL(k.caixa_atual||0)+' · Meta: >6 meses';
-
-  document.getElementById('g-margem').textContent  = PCT(mg);
-  document.getElementById('gf-margem').style.width = Math.min(mg,100)+'%';
-
-  const comp = k.comprometimento_pct||0;
-  document.getElementById('g-comp').textContent  = PCT(comp);
-  document.getElementById('gf-comp').style.width = Math.min(comp,100)+'%';
-  document.getElementById('gf-comp').style.background = comp>100?VM:comp>50?AM:'#F39C12';
-
-  // ── Gráficos ──
-  const fl = d.fluxo_mensal||[];
-  const meses = fl.map(m=>m.mes);
-
-  // 1. Fluxo mensal
-  newChart('ch-fluxo','bar',{
-    labels: meses,
-    datasets:[
-      {label:'Receita Realizada',data:fl.map(m=>m.rec_real),backgroundColor:'rgba(26,122,74,.75)',borderRadius:4},
-      {label:'Receita Prevista', data:fl.map(m=>m.rec_prev),backgroundColor:'rgba(211,84,0,.55)',borderRadius:4},
-      {label:'Custo Total Real', data:fl.map(m=>-(m.fix_real+m.var_real)),backgroundColor:'rgba(192,57,43,.65)',borderRadius:4},
-      {label:'Fluxo Realizado', data:fl.map(m=>m.fluxo_real),type:'line',borderColor:AZ3,backgroundColor:'rgba(74,144,217,.08)',borderWidth:2,pointRadius:3,fill:true,yAxisID:'y1'},
-    ]
-  },{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-  // 2. Resultado YTD (doughnut)
-  newChart('ch-resultado','doughnut',{
-    labels:['Receita Real','Custo Fixo Real','Custo Var Real'],
-    datasets:[{data:[k.rec_real_ytd||1, fl.reduce((a,m)=>a+m.fix_real,0), fl.reduce((a,m)=>a+m.var_real,0)],backgroundColor:[VD,AZ,VM],borderWidth:2,borderColor:'#fff'}]
-  },{cutout:'55%'});
-
-  // 3. Receita por mês (bar)
-  newChart('ch-rec-mes','bar',{
-    labels:meses,
-    datasets:[
-      {label:'Realizado',data:fl.map(m=>m.rec_real),backgroundColor:'rgba(26,122,74,.8)',borderRadius:4},
-      {label:'Previsto', data:fl.map(m=>m.rec_prev),backgroundColor:'rgba(211,84,0,.5)',borderRadius:4},
-    ]
-  },{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-  // 4. Status Recebíveis
-  const recAll = d.recebiveis||[];
-  const statusCount = {
-    'A RECEBER': recAll.filter(r=>r.status==='A RECEBER').reduce((a,r)=>a+r.val_parc,0),
-    'RECEBIDO':  recAll.filter(r=>r.status==='RECEBIDO').reduce((a,r)=>a+r.val_parc,0),
-    'VENCIDO':   recAll.filter(r=>r.status==='VENCIDO').reduce((a,r)=>a+r.val_parc,0),
-  };
-  newChart('ch-rec-status','doughnut',{
-    labels:Object.keys(statusCount),
-    datasets:[{data:Object.values(statusCount),backgroundColor:[AM,VD,VM],borderWidth:2,borderColor:'#fff'}]
-  },{cutout:'55%'});
-
-  // 5. Custos fixo vs variável
-  newChart('ch-custos','bar',{
-    labels:meses,
-    datasets:[
-      {label:'Fixo Real',    data:fl.map(m=>m.fix_real),backgroundColor:'rgba(27,42,74,.75)',borderRadius:4},
-      {label:'Variável Real',data:fl.map(m=>m.var_real),backgroundColor:'rgba(74,144,217,.65)',borderRadius:4},
-    ]
-  },{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-  // 6. Projetos bar
-  if(proj.length){
-    newChart('ch-proj-bar','bar',{
-      labels:proj.map(p=>p.nome.length>20?p.nome.substring(0,20)+'…':p.nome),
-      datasets:[
-        {label:'Receita',data:proj.map(p=>p.receita),backgroundColor:'rgba(26,122,74,.8)',borderRadius:4},
-        {label:'Custos', data:proj.map(p=>p.custos), backgroundColor:'rgba(192,57,43,.7)',borderRadius:4},
-      ]
-    },{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-    newChart('ch-proj-pct','doughnut',{
-      labels:proj.map(p=>p.nome.length>18?p.nome.substring(0,18)+'…':p.nome),
-      datasets:[{data:proj.map(p=>p.pct),backgroundColor:[VD,AZ2,AM,VM],borderWidth:2,borderColor:'#fff'}]
-    },{cutout:'50%'});
-  }
-
-  // 7. Caixa acumulado
-  let caixaAcum=k.caixa_atual||48956;
-  const caixaReal=[]; const caixaPrev=[];
-  let cx=48956.11;
-  fl.forEach(m=>{ cx+=m.fluxo_real; caixaReal.push(Math.round(cx)); });
-  cx=48956.11;
-  fl.forEach(m=>{ cx+=m.fluxo_real+m.fluxo_prev; caixaPrev.push(Math.round(cx)); });
-  newChart('ch-caixa','line',{
-    labels:meses,
-    datasets:[
-      {label:'Caixa Realizado',data:caixaReal,borderColor:VD,backgroundColor:VDL,fill:true,borderWidth:2,pointRadius:3},
-      {label:'Caixa c/ Previsto',data:caixaPrev,borderColor:LJ,backgroundColor:LJL,fill:true,borderWidth:2,borderDash:[5,4],pointRadius:3},
-    ]
-  },{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-  // 8. Dívidas (horizontal bar)
-  const divLabels=['DAS PARCSN','PGFN 257','PGFN 256','SFR','PGFN 258','IRPJ Fonte'];
-  const divVals=[50371.84,32159.55,7107.66,10526.80,2603.20,224.92];
-  newChart('ch-dividas','bar',{
-    labels:divLabels,
-    datasets:[{label:'Saldo Devedor',data:divVals,backgroundColor:[AZ,AZ2,AZ3,AM,VM,'#95A5A6'],borderRadius:4}]
-  },{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
-
-  // ── Tabelas ──
   // Recebíveis
-  const tbRec = document.getElementById('tbody-rec');
-  tbRec.innerHTML = '';
-  (d.recebiveis||[]).forEach(r=>{
-    const sc = r.status==='RECEBIDO'?'rec':r.status==='A RECEBER'?'prev':r.status==='VENCIDO'?'venc':'canc';
-    tbRec.innerHTML += `<tr>
-      <td><strong>${r.projeto}</strong></td><td>${r.tipo}</td><td>${r.parcela}</td>
-      <td class="val-pos">${BRL(r.val_parc)}</td>
-      <td>${r.venc||'—'}</td>
-      <td><span class="tag ${sc}">${r.status}</span></td>
-      <td>${r.comp||'—'}</td>
-    </tr>`;
-  });
+  document.getElementById('k2-r').textContent=BRL(k.recebido||0);
+  document.getElementById('k2-a').textContent=BRL(ar);
+  document.getElementById('k2-v').textContent=BRL(k.vencido||0);
+  document.getElementById('k2-t').textContent=PCT(k.taxa_recebimento_pct||0);
+  const tbRe=document.getElementById('tb-re');tbRe.innerHTML='';
+  rec.forEach(r=>{const s=r.status==='RECEBIDO'?'rec':r.status==='A RECEBER'?'prev':r.status==='VENCIDO'?'venc':'canc';tbRe.innerHTML+=`<tr><td><strong>${r.projeto}</strong></td><td>${r.tipo}</td><td>${r.parcela}</td><td class="vp">${BRL(r.val_parc)}</td><td>${r.venc||'—'}</td><td><span class="tag ${s}">${r.status}</span></td><td>${r.comp||'—'}</td></tr>`;});
 
   // Projetos
-  const tbProj = document.getElementById('tbody-proj');
-  tbProj.innerHTML = '';
-  (d.projetos||[]).forEach(p=>{
-    const sc = p.status==='Concluído'?'rec':p.status==='Em andamento'?'prev':'neu';
-    tbProj.innerHTML += `<tr>
-      <td><strong>${p.nome}</strong></td><td>${p.tipo}</td>
-      <td><span class="tag ${sc}">${p.status}</span></td>
-      <td class="val-pos">${BRL(p.receita)}</td>
-      <td class="val-neg">${BRL(p.custos)}</td>
-      <td class="val-pos">${BRL(p.margem)}</td>
-      <td><strong>${PCT(p.pct)}</strong></td>
-    </tr>`;
-  });
+  const tR=proj.reduce((a,p)=>a+p.receita,0),tC=proj.reduce((a,p)=>a+p.custos,0),tM=tR-tC;
+  document.getElementById('k3-r').textContent=BRL(tR);document.getElementById('k3-c').textContent=BRL(tC);document.getElementById('k3-m').textContent=BRL(tM);document.getElementById('k3-p').textContent=tR?PCT(tM/tR*100):'—';
+  if(proj.length){
+    mkC('ch-pj','bar',{labels:proj.map(p=>p.nome.length>22?p.nome.substring(0,22)+'…':p.nome),datasets:[{label:'Receita',data:proj.map(p=>p.receita),backgroundColor:'rgba(26,122,74,.8)',borderRadius:4},{label:'Custos',data:proj.map(p=>p.custos),backgroundColor:'rgba(192,57,43,.7)',borderRadius:4}]},{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+    mkC('ch-pp','doughnut',{labels:proj.map(p=>p.nome.length>18?p.nome.substring(0,18)+'…':p.nome),datasets:[{data:proj.map(p=>p.pct),backgroundColor:[C.vd,C.az2,C.am,C.vm],borderWidth:2,borderColor:'#fff'}]},{cutout:'50%'});
+  }
+  const tbPr=document.getElementById('tb-pr');tbPr.innerHTML='';
+  proj.forEach(p=>{tbPr.innerHTML+=`<tr><td><strong>${p.nome}</strong></td><td>${p.tipo}</td><td><span class="tag and">${p.status}</span></td><td class="vp">${BRL(p.receita)}</td><td class="vn">${BRL(p.custos)}</td><td class="vp">${BRL(p.margem)}</td><td><strong>${PCT(p.pct)}</strong></td></tr>`;});
+
+  // SAÚDE FINANCEIRA
+  const cx=k.caixa_atual||0,rwf=k.runway_fix_meses||0,comp=k.comprometimento_pct||0,taxa=k.taxa_recebimento_pct||0;
+  const divTotal=divs.reduce((a,d)=>a+d.saldo,0)||k.dividas_aberto||0;
+
+  document.getElementById('s-cx').textContent=BRL(cx);setBar('bf-cx',cx/100000*100);
+  document.getElementById('s-rw').textContent=NUM(rw)+' meses';setBar('bf-rw',rw/12*100);setBM('bm-rw',rw,6,3,['Saudável (>6m)','Atenção (3–6m)','Crítico (<3m)']);
+  document.getElementById('s-rwf').textContent=NUM(rwf)+' meses';setBar('bf-rwf',rwf/18*100);
+  document.getElementById('s-mg').textContent=PCT(mg);setBar('bf-mg',Math.max(mg,0));setBM('bm-mg',mg,50,20,['Excelente (>50%)','Adequado (20–50%)','Crítico (<20%)']);
+  document.getElementById('s-co').textContent=PCT(comp);setBar('bf-co',comp,comp>100?C.vm:comp>50?C.am:C.vd);document.getElementById('bf-co').style.background=comp>100?C.vm:comp>50?C.am:C.vd;setBM('bm-co',comp,50,100,['Saudável (<50%)','Atenção (50–100%)','Crítico (>100%)'],true);
+  document.getElementById('s-tx').textContent=PCT(taxa);setBar('bf-tx',taxa);setBM('bm-tx',taxa,80,50,['Ótimo (>80%)','Regular (50–80%)','Baixo (<50%)']);
+  document.getElementById('s-cb').textContent=MUL(k.cobertura_fix||0);
+  document.getElementById('s-rc').textContent=BRL(rr);document.getElementById('s-dv').textContent=BRL(divTotal);
+  document.getElementById('s-cm').textContent=BRL(cm);document.getElementById('s-cms').textContent='Fixo: '+BRL(k.custo_fix_mensal||0)+' · Var: '+BRL(k.custo_var_mensal||0);
+  document.getElementById('s-dt').textContent=BRL(divTotal);
+
+  // Dívidas list
+  const dl=document.getElementById('dl');
+  if(divs.length){dl.innerHTML='';const tot=divs.reduce((a,d)=>a+d.saldo,0);divs.forEach(d=>{const p=tot?Math.round(d.saldo/tot*100):0;dl.innerHTML+=`<div class="di"><div><div class="dn">${d.nome}</div><div class="dp"><div class="dpf" style="width:${p}%"></div></div></div><div class="dv">${BRL(d.saldo)}</div></div>`;});}
+  else dl.innerHTML='<div style="color:var(--cz);font-size:12px;text-align:center;padding:20px">Nenhuma dívida registrada como Pendente no DETALHAMENTO.</div>';
+
+  if(divs.length)mkC('ch-dv','bar',{labels:divs.map(d=>d.nome.length>14?d.nome.substring(0,14)+'…':d.nome),datasets:[{label:'Saldo',data:divs.map(d=>d.saldo),backgroundColor:[C.az,C.az2,C.az3,C.am,C.vm,'#95A5A6'],borderRadius:4}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+
+  let cx0=48956.11,cxR=[],cxP=[];fl.forEach(m=>{cx0+=m.fluxo_real;cxR.push(Math.round(cx0));});cx0=48956.11;fl.forEach(m=>{cx0+=m.fluxo_real+m.fluxo_prev;cxP.push(Math.round(cx0));});
+  mkC('ch-ca','line',{labels:ms,datasets:[{label:'Realizado',data:cxR,borderColor:C.vd,backgroundColor:C.vdl,fill:true,borderWidth:2,pointRadius:3},{label:'c/ Previsto',data:cxP,borderColor:C.lj,backgroundColor:C.ljl,fill:true,borderWidth:2,borderDash:[5,4],pointRadius:3}]},{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+
+  const cm2={};rec.forEach(r=>{if(!cm2[r.comp])cm2[r.comp]={a:0,r:0};if(r.status==='A RECEBER')cm2[r.comp].a+=r.val_parc;if(r.status==='RECEBIDO')cm2[r.comp].r+=r.val_parc;});
+  const ck=Object.keys(cm2).filter(k=>k);
+  mkC('ch-rc','bar',{labels:ck,datasets:[{label:'Recebido',data:ck.map(k=>cm2[k].r),backgroundColor:'rgba(26,122,74,.8)',borderRadius:4},{label:'A Receber',data:ck.map(k=>cm2[k].a),backgroundColor:'rgba(243,156,18,.7)',borderRadius:4}]},{scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}}}});
+
+  const tbSR=document.getElementById('tb-sr');tbSR.innerHTML='';
+  rec.forEach(r=>{const s=r.status==='RECEBIDO'?'rec':r.status==='A RECEBER'?'prev':r.status==='VENCIDO'?'venc':'canc';tbSR.innerHTML+=`<tr><td><strong>${r.projeto}</strong></td><td>${r.tipo}</td><td>${r.parcela}</td><td class="vp">${BRL(r.val_parc)}</td><td>${r.venc||'—'}</td><td><span class="tag ${s}">${r.status}</span></td><td>${r.comp||'—'}</td></tr>`;});
 
   // Lançamentos
-  const tbLanc = document.getElementById('tbody-lanc');
-  tbLanc.innerHTML = '';
-  [...(d.lancamentos||[])].reverse().forEach(l=>{
-    const pos = l.valor > 0;
-    tbLanc.innerHTML += `<tr>
-      <td>${l.data||'—'}</td>
-      <td><span class="tag ${pos?'rec':'venc'}">${l.tipo}</span></td>
-      <td>${l.cat}</td><td>${l.projeto||'—'}</td>
-      <td>${l.desc||'—'}</td>
-      <td class="${pos?'val-pos':'val-neg'}">${pos?'+':'-'}${BRL(l.valor)}</td>
-      <td><span class="tag ${l.status==='Pago'||l.status==='Recebido'?'rec':'prev'}">${l.status}</span></td>
-    </tr>`;
-  });
+  const tbL=document.getElementById('tb-la');tbL.innerHTML='';
+  [...lanc].reverse().forEach(l=>{const pos=l.valor>0;const s=l.status==='Pago'||l.status==='Recebido'?'rec':'prev';tbL.innerHTML+=`<tr><td>${l.data||'—'}</td><td><span class="tag ${pos?'rec':'venc'}">${l.tipo}</span></td><td>${l.cat}</td><td>${l.projeto||'—'}</td><td>${l.desc||'—'}</td><td class="${pos?'vp':'vn'}">${pos?'':'-'}${BRL(l.valor)}</td><td><span class="tag ${s}">${l.status}</span></td></tr>`;});
 }
 
-// ── Dados demo (quando data.json não existe ainda) ──
-function getDemoData(){
-  const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const fluxo = meses.map((mes,i)=>({
-    mes,aba:mes.toUpperCase()+'26',
-    rec_real: i<3?[0,0,0][i]:0, rec_prev: i>=3?[35000,37500,37500,0,0,0,0,0,0][i-3]||0:0,
-    var_real: i<3?[1451,1281,1007][i]:0, var_prev: i>=3?1200:0,
-    fix_real: i<3?[20597,4362,5406][i]:0, fix_prev: i>=3?4591:0,
-    fluxo_real: i<3?[-22048,-5643,-6413][i]:0, fluxo_prev: i>=3?[29209,31709,31709,-4591,-4591,-4591,-4591,-4591,-4591][i-3]||0:0,
-  }));
-  return {
-    atualizado_em: new Date().toLocaleDateString('pt-BR')+' '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' (demonstração)',
-    kpis:{
-      rec_real_ytd:0, custo_real_ytd:34303, resultado_real:-34303,
-      a_receber:66000, recebido:33000, vencido:0,
-      dividas_aberto:102769, caixa_atual:48956, custo_med_mensal:4591,
-      runway_meses:10.7, margem_bruta_pct:0, comprometimento_pct:209.9, taxa_recebimento_pct:50,
-    },
-    fluxo_mensal: fluxo,
-    recebiveis:[
-      {projeto:'Projeto Lenilson',tipo:'Consultoria',val_total:15000,parcela:'1/3',val_parc:5000,venc:'31/01/2026',receb:'31/01/2026',status:'RECEBIDO',comp:'JAN/26'},
-      {projeto:'Projeto Lenilson',tipo:'Consultoria',val_total:15000,parcela:'2/3',val_parc:5000,venc:'28/02/2026',receb:'',status:'A RECEBER',comp:'FEV/26'},
-      {projeto:'Projeto Lenilson',tipo:'Consultoria',val_total:15000,parcela:'3/3',val_parc:5000,venc:'31/03/2026',receb:'',status:'A RECEBER',comp:'MAR/26'},
-      {projeto:'Cliente ABC - EPC',tipo:'EPC',val_total:84000,parcela:'1/3',val_parc:28000,venc:'31/01/2026',receb:'31/01/2026',status:'RECEBIDO',comp:'JAN/26'},
-      {projeto:'Cliente ABC - EPC',tipo:'EPC',val_total:84000,parcela:'2/3',val_parc:28000,venc:'28/02/2026',receb:'',status:'A RECEBER',comp:'FEV/26'},
-      {projeto:'Cliente ABC - EPC',tipo:'EPC',val_total:84000,parcela:'3/3',val_parc:28000,venc:'31/03/2026',receb:'',status:'A RECEBER',comp:'MAR/26'},
-    ],
-    projetos:[
-      {nome:'Projeto Lenilson',tipo:'Consultoria',status:'Em andamento',receita:15000,custos:1200,margem:13800,pct:92},
-      {nome:'Cliente ABC - EPC',tipo:'EPC',status:'Em andamento',receita:84000,custos:9500,margem:74500,pct:88.7},
-    ],
-    lancamentos:[
-      {data:'2026-01-21',tipo:'DESPESA',cat:'TRT',projeto:'',desc:'Taxa TRT Jan/26',valor:-68.17,status:'Pago',comp:'JAN/26'},
-      {data:'2026-01-08',tipo:'DESPESA',cat:'Frete',projeto:'',desc:'Frete equipamentos',valor:-870,status:'Pago',comp:'JAN/26'},
-    ],
-  };
+function demo(){
+  const fl=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map((mes,i)=>({mes,aba:mes+'26',rec_real:0,rec_prev:i>=3?35000:0,var_real:i<3?800:0,var_prev:i>=3?800:0,fix_real:i<3?4591:0,fix_prev:i>=3?4591:0,fluxo_real:i<3?-5391:0,fluxo_prev:i>=3?29609:0}));
+  return{atualizado_em:new Date().toLocaleDateString('pt-BR')+' (demonstração)',kpis:{rec_real_ytd:0,custo_real_ytd:0,resultado_real:0,a_receber:66000,recebido:33000,vencido:0,dividas_aberto:102769,caixa_atual:48956,custo_med_mensal:4591,custo_fix_mensal:4591,custo_var_mensal:800,runway_meses:10.7,runway_fix_meses:10.7,margem_bruta_pct:0,comprometimento_pct:209.9,taxa_recebimento_pct:33.3,cobertura_fix:0,break_even:0},
+  fluxo_mensal:fl,
+  recebiveis:[{projeto:'Projeto Lenilson',tipo:'Consultoria',val_total:15000,parcela:'1/3',val_parc:5000,venc:'31/01/2026',receb:'31/01/2026',status:'RECEBIDO',comp:'JAN/26'},{projeto:'Projeto Lenilson',tipo:'Consultoria',val_total:15000,parcela:'2/3',val_parc:5000,venc:'28/02/2026',receb:'',status:'A RECEBER',comp:'FEV/26'},{projeto:'Cliente ABC',tipo:'EPC',val_total:84000,parcela:'1/3',val_parc:28000,venc:'31/01/2026',receb:'31/01/2026',status:'RECEBIDO',comp:'JAN/26'},{projeto:'Cliente ABC',tipo:'EPC',val_total:84000,parcela:'2/3',val_parc:28000,venc:'28/02/2026',receb:'',status:'A RECEBER',comp:'FEV/26'}],
+  projetos:[{nome:'Projeto Lenilson',tipo:'Consultoria',status:'Em andamento',receita:15000,custos:1200,margem:13800,pct:92},{nome:'Cliente ABC - EPC',tipo:'EPC',status:'Em andamento',receita:84000,custos:9500,margem:74500,pct:88.7}],
+  dividas:[{nome:'DAS de PARCSN',saldo:50371.84},{nome:'PGFN 014629257',saldo:32159.55},{nome:'PGFN 014629256',saldo:7107.66},{nome:'Parcelamento SFR',saldo:10526.80},{nome:'PGFN 014629258',saldo:2603.20}],
+  lancamentos:[]};
 }
-
-// loadData é chamado pelo sistema de login após autenticação
-
+</script>
+</body>
+</html>
