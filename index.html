@@ -330,29 +330,36 @@ const AM='#F39C12';
 
 // ── Carregar dados ──
 async function loadData(){
+  document.getElementById('loading').style.display='flex';
+  let data;
   try{
-    // Tenta carregar data.json (GitHub Pages) — fallback para dados demo
-    let data;
-    try{
-      const r = await fetch('data.json?t='+Date.now());
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      data = await r.json();
-    } catch(e) {
-      console.warn('data.json não encontrado — usando dados demo');
-      data = getDemoData();
+    const r = await fetch('data.json?t='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    data = await r.json();
+    // Validar que tem a estrutura esperada
+    if(!data || !data.kpis || !data.fluxo_mensal){
+      throw new Error('Estrutura inválida');
     }
+  } catch(e){
+    console.warn('data.json não carregado ('+e.message+') — usando dados demo');
+    data = getDemoData();
+  }
+  try{
     render(data);
   } catch(e){
     document.getElementById('loading').style.display='none';
     const eb = document.getElementById('erro-box');
     eb.style.display='block';
-    eb.textContent='Erro ao carregar dados: '+e.message;
+    eb.textContent='Erro ao renderizar: '+e.message+'. Abra o console (F12) para detalhes.';
+    console.error(e);
   }
 }
 
 function render(d){
   document.getElementById('loading').style.display='none';
-  document.querySelectorAll('.page').forEach(p=>p.style.display='');
+  document.getElementById('erro-box').style.display='none';
+  // Mostrar todas as páginas (display controlado pelas tabs)
+  document.querySelectorAll('.page').forEach(p=>{p.style.display='block'; p.classList.remove('active');});
   document.getElementById('page-overview').classList.add('active');
 
   const k = d.kpis;
