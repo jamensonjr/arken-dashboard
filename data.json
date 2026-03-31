@@ -1,8 +1,10 @@
 {
-  "atualizado_em": "30/03/2026 23:26",
+  "atualizado_em": "31/03/2026 07:40",
   "kpis": {
     "rec_real_ytd": 0.0,
     "custo_real_ytd": 0.0,
+    "custo_fix_ytd": 0.0,
+    "custo_var_ytd": 0.0,
     "resultado_real": 0.0,
     "a_receber": 66000.0,
     "recebido": 33000.0,
@@ -10,10 +12,15 @@
     "dividas_aberto": 0,
     "caixa_atual": 48956.11,
     "custo_med_mensal": 4591.12,
+    "custo_fix_mensal": 4591.12,
+    "custo_var_mensal": 0,
     "runway_meses": 10.7,
+    "runway_fix_meses": 10.7,
     "margem_bruta_pct": 0,
     "comprometimento_pct": 0.0,
-    "taxa_recebimento_pct": 33.3
+    "taxa_recebimento_pct": 33.3,
+    "cobertura_fix": 0,
+    "break_even": 0
   },
   "fluxo_mensal": [
     {
@@ -227,17 +234,6 @@
       "receb": "",
       "status": "A RECEBER",
       "comp": "MAR/26"
-    },
-    {
-      "projeto": "▼  REGISTRE NOVOS RECEBÍVEIS ABAIXO  ▼",
-      "tipo": "",
-      "val_total": 0.0,
-      "parcela": "",
-      "val_parc": 0.0,
-      "venc": "",
-      "receb": "",
-      "status": "",
-      "comp": ""
     }
   ],
   "projetos": [
@@ -258,16 +254,8 @@
       "custos": 9500.0,
       "margem": 74500.0,
       "pct": 88.7
-    },
-    {
-      "nome": "TOTAIS",
-      "tipo": "",
-      "status": "",
-      "receita": 0.0,
-      "custos": 0.0,
-      "margem": 0.0,
-      "pct": 0.0
     }
   ],
+  "dividas": [],
   "lancamentos": []
 }
