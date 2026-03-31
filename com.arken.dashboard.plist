@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.arken.dashboard</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <!-- ATENÇÃO: substitua "james" pelo seu usuário se for diferente -->
+        <string>/Users/james/Desktop/ARKEN CONSULTORIA/Financeiro/arken-dashboard/atualizar.sh</string>
+    </array>
+
+    <!-- Roda todos os dias às 07:00 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/arken-dashboard.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/arken-dashboard-err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
